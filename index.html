@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Älykäs ostoslista - Järjestä ostoksesi käytävittäin">
+    <title>Kauppalista - Älykäs Ostoslista</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 896px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        /* Backgrounds */
+        .bg-create {
+            background: linear-gradient(to bottom right, #f5f3ff, #fae8ff, #fdf4ff);
+            min-height: 100vh;
+        }
+
+        .bg-arrange {
+            background: linear-gradient(to bottom right, #eff6ff, #eef2ff, #f5f3ff);
+            min-height: 100vh;
+        }
+
+        .bg-shopping {
+            background: linear-gradient(to bottom right, #fff1f2, #fce7f3, #fdf4ff);
+            min-height: 100vh;
+        }
+
+        .bg-completed {
+            background: linear-gradient(to bottom right, #ecfdf5, #d1fae5, #ccfbf1);
+            min-height: 100vh;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 1rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(to right, #8b5cf6, #a855f7);
+            color: white;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(to right, #7c3aed, #9333ea);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #9333ea;
+            border: 2px solid #e9d5ff;
+        }
+
+        .btn-secondary:hover {
+            background: #faf5ff;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        /* Cards */
+        .card {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1.5rem;
+        }
+
+        /* Input */
+        .input {
+            width: 100%;
+            padding: 1rem 1.25rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 0.75rem;
+            font-size: 1.125rem;
+            transition: border-color 0.2s;
+        }
+
+        .input:focus {
+            outline: none;
+            border-color: #a855f7;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding-top: 2rem;
+        }
+
+        .header-icon {
+            width: 5rem;
+            height: 5rem;
+            background: linear-gradient(to bottom right, #8b5cf6, #7c3aed);
+            border-radius: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            font-size: 2.25rem;
+            background: linear-gradient(to right, #8b5cf6, #a855f7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            color: #6b7280;
+            font-size: 1.125rem;
+        }
+
+        /* Category items */
+        .category-group {
+            border: 2px solid;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .category-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .category-icon {
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .item-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            background: white;
+            border-radius: 0.5rem;
+            margin-bottom: 0.5rem;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Progress bar */
+        .progress-bar {
+            width: 100%;
+            height: 1rem;
+            background: #e5e7eb;
+            border-radius: 9999px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(to right, #ec4899, #f43f5e, #a855f7);
+            border-radius: 9999px;
+            transition: width 0.5s;
+        }
+
+        /* Shopping items */
+        .shopping-item {
+            width: 100%;
+            padding: 1.25rem;
+            border: 2px solid;
+            border-radius: 0.75rem;
+            text-align: left;
+            font-size: 1.25rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .shopping-item.picked {
+            background: #dcfce7;
+            border-color: #86efac;
+            color: #6b7280;
+            text-decoration: line-through;
+        }
+
+        .shopping-item:not(.picked):hover {
+            transform: scale(1.02);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Grid */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+        }
+
+        /* Fixed footer */
+        .fixed-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 2px solid #fbcfe8;
+            padding: 1rem;
+            box-shadow: 0 -10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .footer-content {
+            max-width: 896px;
+            margin: 0 auto;
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .footer-content button {
+            flex: 1;
+            padding: 1rem;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            z-index: 1000;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            max-width: 28rem;
+            width: 100%;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .modal-header h2 {
+            font-size: 1.5rem;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #6b7280;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+        }
+
+        .close-btn:hover {
+            background: #f3f4f6;
+        }
+
+        /* Utilities */
+        .hidden {
+            display: none !important;
+        }
+
+        .mb-1 { margin-bottom: 0.5rem; }
+        .mb-2 { margin-bottom: 1rem; }
+        .mb-4 { margin-bottom: 1.5rem; }
+        .pb-32 { padding-bottom: 8rem; }
+        .text-center { text-align: center; }
+        .flex { display: flex; }
+        .flex-between { justify-content: space-between; }
+        .items-center { align-items: center; }
+        .gap-2 { gap: 0.5rem; }
+        .gap-3 { gap: 0.75rem; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+            .container {
+                padding: 0.5rem;
+            }
+        }
+
+        /* Language toggle */
+        .lang-toggle {
+            background: white;
+            border-radius: 0.75rem;
+            padding: 0.25rem;
+            display: inline-flex;
+            gap: 0.25rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .lang-btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            background: transparent;
+            color: #6b7280;
+            transition: all 0.2s;
+        }
+
+        .lang-btn.active {
+            background: linear-gradient(to right, #8b5cf6, #a855f7);
+            color: white;
+        }
+
+        .lang-btn:not(.active):hover {
+            background: #f3f4f6;
+        }
+
+        /* Top bar */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-top: 1rem;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+
+        /* Select dropdown */
+        select {
+            padding: 0.75rem 1rem;
+            border: 2px solid #e9d5ff;
+            border-radius: 0.75rem;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            background: linear-gradient(to right, #fdf4ff, #fae8ff);
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #d946ef;
+        }
+
+        /* Draggable items */
+        .draggable-item {
+            cursor: move;
+            user-select: none;
+        }
+
+        .draggable-item.dragging {
+            opacity: 0.5;
+            transform: scale(0.95);
+        }
+
+        /* Textarea */
+        textarea {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 0.75rem;
+            font-family: monospace;
+            font-size: 0.875rem;
+            resize: none;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #a855f7;
+        }
+
+        .code-box {
+            background: #f9fafb;
+            border: 2px solid #e5e7eb;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 0.875rem;
+            color: #374151;
+        }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+
+    <script>
+        // State management
+        const state = {
+            stage: 'create',
+            language: 'fi',
+            shoppingList: [],
+            aisleOrder: [],
+            currentAisleIndex: 0,
+            draggedIndex: null
+        };
+
+        // Translations
+        const translations = {
+            en: {
+                createTitle: "Create Your Shopping List",
+                createSubtitle: "Add items and we'll organize them by aisle",
+                inputPlaceholder: "Enter item name (e.g., banana, milk, bread)",
+                addButton: "Add",
+                yourList: "Your List",
+                items: "items",
+                item: "item",
+                arrangeButton: "Plan route",
+                arrangeTitle: "Plan Your Route",
+                arrangeSubtitle: "Drag aisles to match your store layout",
+                shoppingOrder: "Shopping order",
+                backButton: "Back",
+                startShopping: "Start shopping",
+                shoppingMode: "Shopping Mode",
+                aisleOf: "Aisle {current}/{total}",
+                overallProgress: "Overall progress",
+                remaining: "remaining",
+                of: "/",
+                noItems: "No items in this aisle",
+                aisleComplete: "Aisle complete!",
+                shoppingComplete: "Shopping complete! 🎉",
+                allItemsCollected: "All {count} items collected",
+                previous: "Previous",
+                nextAisle: "Next aisle",
+                finalReminder: "Final reminder",
+                completedItems: "Completed items",
+                startNewList: "Start new list",
+                shareList: "Share list",
+                importList: "Import list",
+                shareTitle: "Share Your Shopping List",
+                shareDescription: "Share this code with friends or family. They can import it to get your shopping list.",
+                copyCode: "Copy code",
+                close: "Close",
+                importTitle: "Import Shopping List",
+                importDescription: "Enter the code you received to import a shopping list.",
+                importPlaceholder: "Paste code here...",
+                importButton: "Import",
+                switchAisle: "Switch aisle:"
+            },
+            fi: {
+                createTitle: "Luo ostoslista",
+                createSubtitle: "Lisää tuotteita ja järjestämme ne käytäväkohtaisesti",
+                inputPlaceholder: "Syötä tuotteen nimi (esim. banaani, maito, leipä)",
+                addButton: "Lisää",
+                yourList: "Listasi",
+                items: "tuotetta",
+                item: "tuote",
+                arrangeButton: "Suunnittele reitti",
+                arrangeTitle: "Suunnittele reittisi",
+                arrangeSubtitle: "Vedä käytävät vastaamaan kauppasi järjestystä",
+                shoppingOrder: "Ostosten järjestys",
+                backButton: "Takaisin",
+                startShopping: "Aloita ostokset",
+                shoppingMode: "Ostostila",
+                aisleOf: "Käytävä {current}/{total}",
+                overallProgress: "Kokonaisedistyminen",
+                remaining: "jäljellä",
+                of: "/",
+                noItems: "Ei tuotteita tällä käytävällä",
+                aisleComplete: "Käytävä valmis!",
+                shoppingComplete: "Ostokset valmiit! 🎉",
+                allItemsCollected: "Kaikki {count} tuotetta kerätty",
+                previous: "Edellinen",
+                nextAisle: "Seuraava käytävä",
+                finalReminder: "Lopullinen muistutus",
+                completedItems: "Valmiit tuotteet",
+                startNewList: "Aloita uusi lista",
+                shareList: "Jaa lista",
+                importList: "Tuo lista",
+                shareTitle: "Jaa ostoslistasi",
+                shareDescription: "Jaa tämä koodi ystäville tai perheenjäsenille. He voivat tuoda sen saadakseen ostoslistasi.",
+                copyCode: "Kopioi koodi",
+                close: "Sulje",
+                importTitle: "Tuo ostoslista",
+                importDescription: "Syötä saamasi koodi tuodaksesi ostoslistan.",
+                importPlaceholder: "Liitä koodi tähän...",
+                importButton: "Tuo",
+                switchAisle: "Vaihda käytävää:"
+            }
+        };
+
+        // Aisle database
+        const aisleDatabase = {
+            'Produce': ['apple', 'banana', 'lettuce', 'tomato', 'carrot', 'onion', 'potato', 'orange', 'grape', 'strawberry', 'cucumber', 'pepper', 'broccoli', 'spinach', 'omena', 'banaani', 'salaatti', 'tomaatti', 'porkkana', 'sipuli', 'peruna', 'appelsiini', 'rypäle', 'mansikka', 'kurkku', 'paprika', 'parsakaali', 'pinaatti'],
+            'Dairy': ['milk', 'egg', 'cheese', 'yogurt', 'butter', 'cream', 'sour cream', 'maito', 'muna', 'juusto', 'jogurtti', 'voi', 'kerma', 'hapankerma'],
+            'Bakery': ['bread', 'bagel', 'roll', 'croissant', 'muffin', 'donut', 'cake', 'leipä', 'sämpylä', 'pulla', 'kakku'],
+            'Meat': ['chicken', 'beef', 'pork', 'turkey', 'fish', 'salmon', 'steak', 'bacon', 'sausage', 'kana', 'nauta', 'sika', 'kalkkuna', 'kala', 'lohi', 'pihvi', 'pekoni', 'makkara'],
+            'Frozen': ['ice cream', 'frozen pizza', 'frozen vegetable', 'frozen fruit', 'frozen meal', 'jäätelö', 'pakastepizza', 'pakastevihannekset', 'pakastefruitsalat', 'valmisruoka'],
+            'Pantry': ['pasta', 'rice', 'cereal', 'sauce', 'oil', 'flour', 'sugar', 'salt', 'spice', 'pasta', 'riisi', 'murot', 'kastike', 'öljy', 'jauho', 'sokeri', 'suola', 'mauste'],
+            'Canned Goods': ['soup', 'beans', 'tuna', 'tomato', 'corn', 'peas', 'keitto', 'pavut', 'tonnikala', 'tomaatti', 'maissi', 'herneet', 'säilyke'],
+            'Snacks': ['chips', 'cookie', 'cracker', 'nut', 'candy', 'popcorn', 'pretzel', 'sipsit', 'keksi', 'pähkinä', 'karkki', 'popcorn'],
+            'Beverages': ['soda', 'juice', 'water', 'coffee', 'tea', 'beer', 'wine', 'limonadi', 'mehu', 'vesi', 'kahvi', 'tee', 'olut', 'viini'],
+            'Household': ['paper towel', 'toilet paper', 'detergent', 'soap', 'shampoo', 'toothpaste', 'talouspaperi', 'wc-paperi', 'pesuaine', 'saippua', 'shampoo', 'hammastahna']
+        };
+
+        const aisleNamesFinnish = {
+            'Produce': 'Hedelmät ja vihannekset',
+            'Dairy': 'Maitotuotteet',
+            'Bakery': 'Leipomo',
+            'Meat': 'Liha',
+            'Frozen': 'Pakaste',
+            'Pantry': 'Kuivatuotteet',
+            'Canned Goods': 'Säilykkeet',
+            'Snacks': 'Naposteltavat',
+            'Beverages': 'Juomat',
+            'Household': 'Kotitalous',
+            'Other': 'Muut'
+        };
+
+        const categoryConfig = {
+            'Produce': { color: 'emerald', bg: '#ecfdf5', border: '#a7f3d0', text: '#059669' },
+            'Dairy': { color: 'blue', bg: '#eff6ff', border: '#bfdbfe', text: '#2563eb' },
+            'Bakery': { color: 'amber', bg: '#fffbeb', border: '#fde68a', text: '#d97706' },
+            'Meat': { color: 'red', bg: '#fef2f2', border: '#fecaca', text: '#dc2626' },
+            'Frozen': { color: 'cyan', bg: '#ecfeff', border: '#a5f3fc', text: '#0891b2' },
+            'Pantry': { color: 'yellow', bg: '#fefce8', border: '#fef08a', text: '#ca8a04' },
+            'Canned Goods': { color: 'orange', bg: '#fff7ed', border: '#fed7aa', text: '#ea580c' },
+            'Snacks': { color: 'pink', bg: '#fdf2f8', border: '#fbcfe8', text: '#db2777' },
+            'Beverages': { color: 'purple', bg: '#faf5ff', border: '#e9d5ff', text: '#9333ea' },
+            'Household': { color: 'teal', bg: '#f0fdfa', border: '#99f6e4', text: '#0d9488' },
+            'Other': { color: 'gray', bg: '#f9fafb', border: '#e5e7eb', text: '#6b7280' }
+        };
+
+        // Helper functions
+        function t(key) {
+            return translations[state.language][key] || key;
+        }
+
+        function getAisleName(aisle) {
+            return state.language === 'fi' ? (aisleNamesFinnish[aisle] || aisle) : aisle;
+        }
+
+        function getAisleForItem(itemName) {
+            const lowerItem = itemName.toLowerCase();
+            for (const [aisle, keywords] of Object.entries(aisleDatabase)) {
+                if (keywords.some(keyword => lowerItem.includes(keyword))) {
+                    return aisle;
+                }
+            }
+            return 'Other';
+        }
+
+        function addItem() {
+            const input = document.getElementById('item-input');
+            const value = input.value.trim();
+            if (value) {
+                const aisle = getAisleForItem(value);
+                state.shoppingList.push({
+                    id: Date.now(),
+                    name: value,
+                    aisle: aisle,
+                    picked: false
+                });
+                input.value = '';
+                render();
+            }
+        }
+
+        function removeItem(id) {
+            state.shoppingList = state.shoppingList.filter(item => item.id !== id);
+            render();
+        }
+
+        function updateItemAisle(id, newAisle) {
+            const item = state.shoppingList.find(i => i.id === id);
+            if (item) item.aisle = newAisle;
+            render();
+        }
+
+        function toggleItem(id) {
+            const item = state.shoppingList.find(i => i.id === id);
+            if (item) {
+                item.picked = !item.picked;
+                render();
+                checkCompletion();
+            }
+        }
+
+        function checkCompletion() {
+            const totalItems = state.shoppingList.length;
+            const pickedItems = state.shoppingList.filter(i => i.picked).length;
+            if (pickedItems === totalItems && totalItems > 0) {
+                state.stage = 'completed';
+                render();
+            }
+        }
+
+        function proceedToArrange() {
+            if (state.shoppingList.length === 0) return;
+            state.aisleOrder = [...new Set(state.shoppingList.map(item => item.aisle))];
+            state.stage = 'arrange';
+            render();
+        }
+
+        function startShopping() {
+            state.stage = 'shopping';
+            state.currentAisleIndex = 0;
+            render();
+        }
+
+        function generateShareCode() {
+            const data = {
+                list: state.shoppingList,
+                order: state.aisleOrder,
+                lang: state.language
+            };
+            return btoa(encodeURIComponent(JSON.stringify(data)));
+        }
+
+        function importFromCode(code) {
+            try {
+                const data = JSON.parse(decodeURIComponent(atob(code)));
+                state.shoppingList = data.list || [];
+                state.aisleOrder = data.order || [];
+                if (data.lang) state.language = data.lang;
+                state.stage = 'create';
+                closeModal('import-modal');
+                render();
+            } catch (error) {
+                alert(state.language === 'fi' ? 'Virheellinen koodi. Tarkista ja yritä uudelleen.' : 'Invalid code. Please check and try again.');
+            }
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert(state.language === 'fi' ? 'Koodi kopioitu leikepöydälle!' : 'Code copied to clipboard!');
+            });
+        }
+
+        function showModal(id) {
+            document.getElementById(id).classList.add('active');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+        }
+
+        function getCurrentAisleItems() {
+            if (state.aisleOrder.length === 0) return [];
+            const currentAisle = state.aisleOrder[state.currentAisleIndex];
+            return state.shoppingList.filter(item => item.aisle === currentAisle);
+        }
+
+        // Render functions
+        function renderCreateStage() {
+            const groupedItems = {};
+            state.shoppingList.forEach(item => {
+                if (!groupedItems[item.aisle]) groupedItems[item.aisle] = [];
+                groupedItems[item.aisle].push(item);
+            });
+
+            return `
+                <div class="bg-create">
+                    <div class="container">
+                        <div class="top-bar">
+                            <button class="btn btn-secondary" onclick="showModal('import-modal')">
+                                ⬇ ${t('importList')}
+                            </button>
+                            
+                            <div class="lang-toggle">
+                                <button class="lang-btn ${state.language === 'en' ? 'active' : ''}" onclick="state.language = 'en'; render();">
+                                    English
+                                </button>
+                                <button class="lang-btn ${state.language === 'fi' ? 'active' : ''}" onclick="state.language = 'fi'; render();">
+                                    Suomi
+                                </button>
+                            </div>
+
+                            ${state.shoppingList.length > 0 ? `
+                                <button class="btn btn-secondary" onclick="showModal('share-modal'); document.getElementById('share-code-text').textContent = generateShareCode();">
+                                    📤 ${t('shareList')}
+                                </button>
+                            ` : ''}
+                        </div>
+
+                        <div class="header">
+                            <div class="header-icon">
+                                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="9" cy="21" r="1" fill="white"/>
+                                    <circle cx="20" cy="21" r="1" fill="white"/>
+                                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+                                </svg>
+                            </div>
+                            <h1>${t('createTitle')}</h1>
+                            <p>${t('createSubtitle')}</p>
+                        </div>
+
+                        <div class="card">
+                            <div class="flex gap-3">
+                                <input 
+                                    type="text" 
+                                    id="item-input" 
+                                    class="input" 
+                                    placeholder="${t('inputPlaceholder')}"
+                                    onkeypress="if(event.key === 'Enter') addItem()"
+                                    style="flex: 1;"
+                                >
+                                <button class="btn btn-primary" onclick="addItem()">
+                                    ➕ ${t('addButton')}
+                                </button>
+                            </div>
+                        </div>
+
+                        ${state.shoppingList.length > 0 ? `
+                            <div class="card">
+                                <h2 class="mb-2" style="font-size: 1.25rem; font-weight: 700; color: #1f2937;">
+                                    ${t('yourList')} (${state.shoppingList.length} ${state.shoppingList.length === 1 ? t('item') : t('items')})
+                                </h2>
+                                
+                                ${Object.entries(groupedItems).map(([aisle, items]) => {
+                                    const config = categoryConfig[aisle] || categoryConfig['Other'];
+                                    return `
+                                        <div class="category-group" style="background: ${config.bg}; border-color: ${config.border};">
+                                            <div class="category-header">
+                                                <div class="category-icon" style="background: ${config.text};">
+                                                    <span style="color: white; font-size: 1.25rem;">📦</span>
+                                                </div>
+                                                <h3 style="font-weight: 700; color: ${config.text}; font-size: 1.125rem;">
+                                                    ${getAisleName(aisle)}
+                                                </h3>
+                                            </div>
+                                            ${items.map(item => `
+                                                <div class="item-row">
+                                                    <span style="flex: 1; font-weight: 500; color: #1f2937;">${item.name}</span>
+                                                    <select onchange="updateItemAisle(${item.id}, this.value)" style="padding: 0.5rem; border-radius: 0.5rem; border: 2px solid #e5e7eb;">
+                                                        ${Object.keys(aisleDatabase).map(a => `
+                                                            <option value="${a}" ${item.aisle === a ? 'selected' : ''}>${getAisleName(a)}</option>
+                                                        `).join('')}
+                                                        <option value="Other" ${item.aisle === 'Other' ? 'selected' : ''}>${getAisleName('Other')}</option>
+                                                    </select>
+                                                    <button onclick="removeItem(${item.id})" style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 0.5rem; font-size: 1.25rem;">
+                                                        ❌
+                                                    </button>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+
+                            <button class="btn btn-primary" onclick="proceedToArrange()" style="width: 100%; padding: 1.25rem; font-size: 1.125rem;">
+                                ${t('arrangeButton')} ➡️
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderArrangeStage() {
+            return `
+                <div class="bg-arrange">
+                    <div class="container">
+                        <div class="header">
+                            <h1 style="background: linear-gradient(to right, #2563eb, #9333ea); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                                ${t('arrangeTitle')}
+                            </h1>
+                            <p>${t('arrangeSubtitle')}</p>
+                        </div>
+
+                        <div class="card">
+                            <h2 class="mb-2" style="font-size: 1.25rem; font-weight: 700; color: #1f2937;">
+                                ${t('shoppingOrder')}
+                            </h2>
+                            <div id="aisle-list">
+                                ${state.aisleOrder.map((aisle, index) => {
+                                    const itemCount = state.shoppingList.filter(item => item.aisle === aisle).length;
+                                    const config = categoryConfig[aisle] || categoryConfig['Other'];
+                                    return `
+                                        <div 
+                                            class="draggable-item" 
+                                            draggable="true"
+                                            ondragstart="state.draggedIndex = ${index}; this.classList.add('dragging');"
+                                            ondragend="this.classList.remove('dragging'); state.draggedIndex = null;"
+                                            ondragover="event.preventDefault();"
+                                            ondrop="handleDrop(${index})"
+                                            style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: white; border: 2px solid #e5e7eb; border-radius: 0.75rem; margin-bottom: 0.75rem; cursor: move;"
+                                        >
+                                            <span style="font-size: 1.5rem; color: #9ca3af;">☰</span>
+                                            <span style="background: linear-gradient(to bottom right, #6366f1, #9333ea); color: white; font-weight: 700; width: 2.5rem; height: 2.5rem; border-radius: 0.75rem; display: flex; align-items: center; justify-content: center; font-size: 1.125rem;">
+                                                ${index + 1}
+                                            </span>
+                                            <div style="background: ${config.text}; padding: 0.625rem; border-radius: 0.5rem;">
+                                                <span style="font-size: 1.375rem;">📦</span>
+                                            </div>
+                                            <div style="flex: 1;">
+                                                <div style="font-weight: 700; color: #1f2937; font-size: 1.125rem;">${getAisleName(aisle)}</div>
+                                                <div style="font-size: 0.875rem; color: #6b7280;">${itemCount} ${itemCount === 1 ? t('item') : t('items')}</div>
+                                            </div>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+
+                        <div class="flex gap-3">
+                            <button class="btn" onclick="state.stage = 'create'; render();" style="flex: 1; background: white; border: 2px solid #d1d5db; color: #374151;">
+                                ⬅️ ${t('backButton')}
+                            </button>
+                            <button class="btn btn-primary" onclick="startShopping()" style="flex: 1;">
+                                ${t('startShopping')} ➡️
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function handleDrop(index) {
+            if (state.draggedIndex === null || state.draggedIndex === index) return;
+            const newOrder = [...state.aisleOrder];
+            const draggedAisle = newOrder[state.draggedIndex];
+            newOrder.splice(state.draggedIndex, 1);
+            newOrder.splice(index, 0, draggedAisle);
+            state.aisleOrder = newOrder;
+            state.draggedIndex = index;
+            render();
+        }
+
+        function renderShoppingStage() {
+            const currentAisle = state.aisleOrder[state.currentAisleIndex];
+            const isLastAisle = state.currentAisleIndex === state.aisleOrder.length - 1;
+            const isFirstAisle = state.currentAisleIndex === 0;
+            const config = categoryConfig[currentAisle] || categoryConfig['Other'];
+            const currentAisleItems = getCurrentAisleItems();
+            const unpickedCurrentAisle = currentAisleItems.filter(item => !item.picked);
+            const totalItems = state.shoppingList.length;
+            const pickedItems = state.shoppingList.filter(item => item.picked).length;
+            const progressPercent = totalItems > 0 ? Math.round((pickedItems / totalItems) * 100) : 0;
+
+            return `
+                <div class="bg-shopping">
+                    <div class="container pb-32">
+                        <div class="card" style="margin-top: 1rem;">
+                            <div class="flex flex-between items-center mb-2">
+                                <div>
+                                    <h1 style="font-size: 1.5rem; font-weight: 700; background: linear-gradient(to right, #db2777, #9333ea); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                                        ${t('shoppingMode')}
+                                    </h1>
+                                    <p style="font-size: 0.875rem; color: #6b7280; font-weight: 500;">
+                                        ${t('aisleOf').replace('{current}', state.currentAisleIndex + 1).replace('{total}', state.aisleOrder.length)}
+                                    </p>
+                                </div>
+                                <button onclick="state.stage = 'create'; state.currentAisleIndex = 0; render();" style="background: none; border: 2px solid #fbcfe8; color: #db2777; padding: 0.625rem; border-radius: 0.75rem; cursor: pointer;">
+                                    ✏️
+                                </button>
+                            </div>
+
+                            <div class="mb-2">
+                                <div class="flex flex-between" style="font-size: 0.875rem; margin-bottom: 0.5rem;">
+                                    <span style="font-weight: 700; color: #374151;">${t('overallProgress')}</span>
+                                    <span style="font-weight: 700; color: #db2777;">${pickedItems}/${totalItems}</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: ${progressPercent}%;"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <label style="display: block; font-size: 0.875rem; font-weight: 600; color: #374151; margin-bottom: 0.5rem;">
+                                ${t('switchAisle')}
+                            </label>
+                            <select onchange="state.currentAisleIndex = parseInt(this.value); render();" style="width: 100%; padding: 0.75rem 1rem; border: 2px solid #fbcfe8; border-radius: 0.75rem; font-size: 1.125rem; font-weight: 500; background: linear-gradient(to right, #fdf4ff, #fae8ff);">
+                                ${state.aisleOrder.map((aisle, index) => {
+                                    const aisleItemCount = state.shoppingList.filter(item => item.aisle === aisle).length;
+                                    const aislePickedCount = state.shoppingList.filter(item => item.aisle === aisle && item.picked).length;
+                                    return `
+                                        <option value="${index}" ${index === state.currentAisleIndex ? 'selected' : ''}>
+                                            ${index + 1}. ${getAisleName(aisle)} (${aislePickedCount}/${aisleItemCount})
+                                        </option>
+                                    `;
+                                }).join('')}
+                            </select>
+                        </div>
+
+                        <div class="card" style="border: 2px solid ${config.border};">
+                            <div class="mb-4">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <div style="background: ${config.text}; padding: 0.75rem; border-radius: 0.75rem;">
+                                        <span style="font-size: 1.75rem;">📦</span>
+                                    </div>
+                                    <div>
+                                        <h2 style="font-size: 1.875rem; font-weight: 700; color: ${config.text};">
+                                            ${getAisleName(currentAisle)}
+                                        </h2>
+                                        <p style="color: #6b7280; font-weight: 500;">
+                                            ${unpickedCurrentAisle.length} ${t('of')} ${currentAisleItems.length} ${t('remaining')}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            ${currentAisleItems.length === 0 ? `
+                                <div class="text-center" style="padding: 3rem 0; color: #6b7280;">
+                                    ${t('noItems')}
+                                </div>
+                            ` : `
+                                <div class="grid-2">
+                                    ${currentAisleItems.map(item => `
+                                        <button 
+                                            class="shopping-item ${item.picked ? 'picked' : ''}" 
+                                            onclick="toggleItem(${item.id})"
+                                            style="background: ${item.picked ? '' : 'white'}; border-color: ${item.picked ? '' : config.border}; color: ${item.picked ? '' : '#1f2937'};"
+                                        >
+                                            <span style="font-size: 2rem;">${item.picked ? '✅' : '⭕'}</span>
+                                            <span>${item.name}</span>
+                                        </button>
+                                    `).join('')}
+                                </div>
+                            `}
+                        </div>
+
+                        ${unpickedCurrentAisle.length === 0 && currentAisleItems.length > 0 ? `
+                            <div style="margin-top: 1rem; background: linear-gradient(to right, #10b981, #059669); border-radius: 1rem; padding: 1.5rem; color: white; text-align: center; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);">
+                                <div style="font-size: 3rem; margin-bottom: 0.5rem;">✅</div>
+                                <p style="font-size: 1.25rem; font-weight: 700;">${t('aisleComplete')}</p>
+                            </div>
+                        ` : ''}
+                    </div>
+
+                    <div class="fixed-footer">
+                        <div class="footer-content">
+                            <button 
+                                class="btn ${isFirstAisle ? '' : 'btn-secondary'}" 
+                                onclick="if (${!isFirstAisle}) { state.currentAisleIndex--; render(); }"
+                                ${isFirstAisle ? 'disabled' : ''}
+                                style="${isFirstAisle ? 'background: #f3f4f6; color: #9ca3af; cursor: not-allowed;' : 'background: #fce7f3; color: #db2777; border: 2px solid #fbcfe8;'}"
+                            >
+                                ⬅️ ${t('previous')}
+                            </button>
+                            <button 
+                                class="btn ${isLastAisle ? '' : 'btn-primary'}" 
+                                onclick="if (${!isLastAisle}) { state.currentAisleIndex++; render(); }"
+                                ${isLastAisle ? 'disabled' : ''}
+                                style="${isLastAisle ? 'background: #f3f4f6; color: #9ca3af; cursor: not-allowed;' : ''}"
+                            >
+                                ${t('nextAisle')} ➡️
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderCompletedStage() {
+            const groupedCompleted = {};
+            state.shoppingList.forEach(item => {
+                if (!groupedCompleted[item.aisle]) groupedCompleted[item.aisle] = [];
+                groupedCompleted[item.aisle].push(item);
+            });
+            const totalItems = state.shoppingList.length;
+
+            return `
+                <div class="bg-completed">
+                    <div class="container">
+                        <div class="header">
+                            <div style="width: 6rem; height: 6rem; background: linear-gradient(to bottom right, #10b981, #059669); border-radius: 1.5rem; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); animation: bounce 1s infinite;">
+                                <span style="font-size: 3.5rem;">✅</span>
+                            </div>
+                            <h1 style="font-size: 3rem; background: linear-gradient(to right, #10b981, #059669); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 0.75rem;">
+                                ${t('shoppingComplete')}
+                            </h1>
+                            <p style="color: #6b7280; font-size: 1.25rem; font-weight: 500;">
+                                ${t('allItemsCollected').replace('{count}', totalItems)}
+                            </p>
+                        </div>
+
+                        <div class="card" style="border: 2px solid #a7f3d0;">
+                            <h2 class="mb-4" style="font-size: 1.5rem; font-weight: 700; display: flex; align-items: center; gap: 0.75rem;">
+                                <span style="font-size: 2rem;">✅</span>
+                                ${t('finalReminder')}
+                            </h2>
+
+                            ${Object.entries(groupedCompleted).map(([aisle, items]) => {
+                                const config = categoryConfig[aisle] || categoryConfig['Other'];
+                                return `
+                                    <div style="border: 2px solid #a7f3d0; border-radius: 0.75rem; padding: 1rem; margin-bottom: 1rem; background: #dcfce7;">
+                                        <div class="flex items-center gap-3 mb-2">
+                                            <div style="background: ${config.text}; padding: 0.5rem; border-radius: 0.5rem;">
+                                                <span style="font-size: 1.25rem;">📦</span>
+                                            </div>
+                                            <h3 style="font-weight: 700; color: #1f2937; font-size: 1.125rem; flex: 1;">
+                                                ${getAisleName(aisle)}
+                                            </h3>
+                                            <span style="font-size: 0.875rem; font-weight: 600; color: #059669;">
+                                                ${items.length} ${items.length === 1 ? t('item') : t('items')}
+                                            </span>
+                                        </div>
+                                        ${items.map(item => `
+                                            <div class="flex items-center gap-3" style="padding: 0.75rem; background: white; border-radius: 0.5rem; margin-bottom: 0.5rem; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);">
+                                                <span style="font-size: 1.5rem;">✅</span>
+                                                <span style="color: #6b7280; text-decoration: line-through; font-weight: 500;">
+                                                    ${item.name}
+                                                </span>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+
+                        <div class="grid-2 mb-4">
+                            <div style="background: linear-gradient(to bottom right, #10b981, #059669); border-radius: 1rem; padding: 1.5rem; color: white; text-align: center; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);">
+                                <div style="font-size: 2.5rem; font-weight: 700; margin-bottom: 0.5rem;">${totalItems}</div>
+                                <div style="color: #d1fae5; font-weight: 500;">${t('completedItems')}</div>
+                            </div>
+                            <div style="background: linear-gradient(to bottom right, #a855f7, #db2777); border-radius: 1rem; padding: 1.5rem; color: white; text-align: center; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);">
+                                <div style="font-size: 2.5rem; font-weight: 700; margin-bottom: 0.5rem;">${state.aisleOrder.length}</div>
+                                <div style="color: #fae8ff; font-weight: 500;">${state.language === 'fi' ? 'Käytävää' : 'Aisles'}</div>
+                            </div>
+                        </div>
+
+                        <button 
+                            class="btn btn-primary" 
+                            onclick="state.shoppingList = []; state.aisleOrder = []; state.currentAisleIndex = 0; state.stage = 'create'; render();"
+                            style="width: 100%; padding: 1.25rem; font-size: 1.125rem;"
+                        >
+                            ➕ ${t('startNewList')}
+                        </button>
+                    </div>
+                </div>
+
+                <style>
+                    @keyframes bounce {
+                        0%, 100% { transform: translateY(0); }
+                        50% { transform: translateY(-10px); }
+                    }
+                </style>
+            `;
+        }
+
+        function render() {
+            const app = document.getElementById('app');
+            let html = '';
+
+            if (state.stage === 'create') {
+                html = renderCreateStage();
+            } else if (state.stage === 'arrange') {
+                html = renderArrangeStage();
+            } else if (state.stage === 'shopping') {
+                html = renderShoppingStage();
+            } else if (state.stage === 'completed') {
+                html = renderCompletedStage();
+            }
+
+            // Add modals
+            html += `
+                <div id="share-modal" class="modal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h2>${t('shareTitle')}</h2>
+                            <button class="close-btn" onclick="closeModal('share-modal')">✕</button>
+                        </div>
+                        <p style="color: #6b7280; margin-bottom: 1.5rem;">${t('shareDescription')}</p>
+                        <div class="code-box" id="share-code-text"></div>
+                        <button class="btn btn-primary" onclick="copyToClipboard(document.getElementById('share-code-text').textContent)" style="width: 100%;">
+                            📋 ${t('copyCode')}
+                        </button>
+                    </div>
+                </div>
+
+                <div id="import-modal" class="modal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h2>${t('importTitle')}</h2>
+                            <button class="close-btn" onclick="closeModal('import-modal')">✕</button>
+                        </div>
+                        <p style="color: #6b7280; margin-bottom: 1.5rem;">${t('importDescription')}</p>
+                        <textarea id="import-code-input" placeholder="${t('importPlaceholder')}" rows="6" style="margin-bottom: 1rem;"></textarea>
+                        <button class="btn btn-primary" onclick="importFromCode(document.getElementById('import-code-input').value)" style="width: 100%;">
+                            ⬇️ ${t('importButton')}
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            app.innerHTML = html;
+        }
+
+        // Initial render
+        render();
+    </script>
+</body>
+</html>
