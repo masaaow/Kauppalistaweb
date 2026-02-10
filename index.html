@@ -396,11 +396,34 @@
         .draggable-item {
             cursor: move;
             user-select: none;
+            touch-action: none;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
         }
 
         .draggable-item.dragging {
-            opacity: 0.5;
-            transform: scale(0.95);
+            opacity: 0.8;
+            transform: scale(1.05) rotate(2deg);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+        }
+
+        .draggable-item.drag-over {
+            border-color: #a855f7 !important;
+            background: #faf5ff !important;
+            transform: translateY(4px);
+        }
+
+        /* Drag handle - make it more obvious */
+        .drag-handle {
+            font-size: 1.5rem;
+            color: #9ca3af;
+            padding: 0.5rem;
+            cursor: grab;
+            touch-action: none;
+        }
+
+        .drag-handle:active {
+            cursor: grabbing;
         }
 
         /* Textarea */
@@ -437,13 +460,82 @@
 
     <script>
         // State management
+        // Load history from localStorage
+        const loadHistory = () => {
+            try {
+                const saved = localStorage.getItem('shoppingHistory');
+                return saved ? JSON.parse(saved) : [];
+            } catch {
+                return [];
+            }
+        };
+
         const state = {
             stage: 'create',
             language: 'fi',
             shoppingList: [],
             aisleOrder: [],
             currentAisleIndex: 0,
-            draggedIndex: null
+            draggedIndex: null,
+            history: loadHistory()
+        };
+
+        // Save history to localStorage
+        const saveHistory = () => {
+            try {
+                localStorage.setItem('shoppingHistory', JSON.stringify(state.history));
+            } catch (e) {
+                console.error('Failed to save history:', e);
+            }
+        };
+
+        // Add completed list to history
+        const saveToHistory = () => {
+            const historyEntry = {
+                id: Date.now(),
+                date: new Date().toISOString(),
+                items: [...state.shoppingList],
+                aisleOrder: [...state.aisleOrder],
+                totalItems: state.shoppingList.length,
+                aisleCount: state.aisleOrder.length
+            };
+            state.history.unshift(historyEntry); // Add to beginning
+            // Keep only last 50 lists
+            if (state.history.length > 50) {
+                state.history = state.history.slice(0, 50);
+            }
+            saveHistory();
+        };
+
+        // Delete history entry
+        const deleteHistoryEntry = (id) => {
+            state.history = state.history.filter(entry => entry.id !== id);
+            saveHistory();
+            render();
+        };
+
+        // Load list from history
+        const loadFromHistory = (id) => {
+            const entry = state.history.find(e => e.id === id);
+            if (entry) {
+                state.shoppingList = entry.items.map(item => ({
+                    ...item,
+                    id: Date.now() + Math.random(),
+                    picked: false // Reset picked status
+                }));
+                state.aisleOrder = [...entry.aisleOrder];
+                state.stage = 'create';
+                render();
+            }
+        };
+
+        // Clear all history
+        const clearAllHistory = () => {
+            if (confirm(t('confirmClearHistory'))) {
+                state.history = [];
+                saveHistory();
+                render();
+            }
         };
 
         // Translations
@@ -486,7 +578,19 @@
                 importDescription: "Enter the code you received to import a shopping list.",
                 importPlaceholder: "Paste code here...",
                 importButton: "Import",
-                switchAisle: "Switch aisle:"
+                switchAisle: "Switch aisle:",
+                history: "History",
+                viewHistory: "View history",
+                pastLists: "Past shopping lists",
+                noHistory: "No shopping history yet",
+                noHistoryDesc: "Complete a shopping trip to see it here",
+                listFrom: "List from",
+                viewList: "View list",
+                deleteList: "Delete",
+                useAgain: "Use again",
+                clearHistory: "Clear all history",
+                confirmClearHistory: "Delete all shopping history?",
+                aisles: "aisles"
             },
             fi: {
                 createTitle: "Luo ostoslista",
@@ -526,7 +630,19 @@
                 importDescription: "Syötä saamasi koodi tuodaksesi ostoslistan.",
                 importPlaceholder: "Liitä koodi tähän...",
                 importButton: "Tuo",
-                switchAisle: "Vaihda käytävää:"
+                switchAisle: "Vaihda käytävää:",
+                history: "Historia",
+                viewHistory: "Näytä historia",
+                pastLists: "Aiemmat ostoslistat",
+                noHistory: "Ei vielä ostoshistoriaa",
+                noHistoryDesc: "Suorita ostosmatka nähdäksesi sen täällä",
+                listFrom: "Lista ajalta",
+                viewList: "Näytä lista",
+                deleteList: "Poista",
+                useAgain: "Käytä uudelleen",
+                clearHistory: "Tyhjennä kaikki historia",
+                confirmClearHistory: "Poistetaanko koko ostoshistoria?",
+                aisles: "käytävää"
             }
         };
 
@@ -631,6 +747,7 @@
             const totalItems = state.shoppingList.length;
             const pickedItems = state.shoppingList.filter(i => i.picked).length;
             if (pickedItems === totalItems && totalItems > 0) {
+                saveToHistory(); // Save to history before completing
                 state.stage = 'completed';
                 render();
             }
@@ -649,21 +766,57 @@
             render();
         }
 
+        // Aisle abbreviation mapping (2 characters each)
+        const aisleMap = {
+            'Produce': 'PR', 'Dairy': 'DA', 'Bakery': 'BA', 'Meat': 'ME',
+            'Frozen': 'FR', 'Pantry': 'PA', 'Canned Goods': 'CG',
+            'Snacks': 'SN', 'Beverages': 'BV', 'Household': 'HH', 'Other': 'OT'
+        };
+        const reverseAisleMap = Object.fromEntries(Object.entries(aisleMap).map(([k, v]) => [v, k]));
+
         function generateShareCode() {
-            const data = {
-                list: state.shoppingList,
-                order: state.aisleOrder,
-                lang: state.language
-            };
-            return btoa(encodeURIComponent(JSON.stringify(data)));
+            // Ultra-compressed format: items separated by |, fields by ~
+            // Format: name~aisleCode~picked|name~aisleCode~picked|...
+            const items = state.shoppingList.map(item => 
+                `${item.name}~${aisleMap[item.aisle] || 'OT'}~${item.picked ? '1' : '0'}`
+            ).join('|');
+            
+            // Aisle order: just the codes separated by comma
+            const order = state.aisleOrder.map(a => aisleMap[a] || 'OT').join(',');
+            
+            // Final format: items::order::lang
+            const data = `${items}::${order}::${state.language === 'fi' ? 'f' : 'e'}`;
+            
+            // Base64 encode
+            return btoa(data);
         }
 
         function importFromCode(code) {
             try {
-                const data = JSON.parse(decodeURIComponent(atob(code)));
-                state.shoppingList = data.list || [];
-                state.aisleOrder = data.order || [];
-                if (data.lang) state.language = data.lang;
+                // Decode
+                const data = atob(code);
+                const [itemsStr, orderStr, lang] = data.split('::');
+                
+                // Parse items
+                if (itemsStr) {
+                    state.shoppingList = itemsStr.split('|').map((itemStr, index) => {
+                        const [name, aisleCode, picked] = itemStr.split('~');
+                        return {
+                            id: Date.now() + index,
+                            name: name,
+                            aisle: reverseAisleMap[aisleCode] || 'Other',
+                            picked: picked === '1'
+                        };
+                    });
+                }
+                
+                // Parse aisle order
+                if (orderStr) {
+                    state.aisleOrder = orderStr.split(',').map(code => reverseAisleMap[code] || 'Other');
+                }
+                
+                // Parse language
+                state.language = lang === 'f' ? 'fi' : 'en';
                 state.stage = 'create';
                 closeModal('import-modal');
                 render();
@@ -704,6 +857,10 @@
                 <div class="bg-create">
                     <div class="container">
                         <div class="top-bar">
+                            <button class="btn btn-secondary" onclick="state.stage = 'history'; render();">
+                                📜 ${t('history')}
+                            </button>
+
                             <button class="btn btn-secondary" onclick="showModal('import-modal')">
                                 ⬇ ${t('importList')}
                             </button>
@@ -723,6 +880,25 @@
                                 </button>
                             ` : ''}
                         </div>
+
+                        ${state.shoppingList.some(item => item.picked) ? `
+                            <div style="background: linear-gradient(to right, #fef3c7, #fed7aa); border: 2px solid #f59e0b; border-radius: 1rem; padding: 1rem; margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between;">
+                                <div>
+                                    <div style="font-weight: 700; color: #92400e; margin-bottom: 0.25rem;">
+                                        ${state.language === 'fi' ? '⚠️ Ostokset kesken' : '⚠️ Shopping in progress'}
+                                    </div>
+                                    <div style="font-size: 0.875rem; color: #78350f;">
+                                        ${state.language === 'fi' ? 'Jotkut tuotteet on jo kerätty' : 'Some items already picked'}
+                                    </div>
+                                </div>
+                                <button 
+                                    onclick="if(confirm('${state.language === 'fi' ? 'Nollataanko kaikki tuotteet keräämättömiksi?' : 'Reset all items to unpicked?'}')) { state.shoppingList.forEach(item => item.picked = false); render(); }"
+                                    style="background: white; border: 2px solid #f59e0b; color: #ea580c; padding: 0.5rem 1rem; border-radius: 0.5rem; font-weight: 600; cursor: pointer;"
+                                >
+                                    ${state.language === 'fi' ? '🔄 Nollaa' : '🔄 Reset'}
+                                </button>
+                            </div>
+                        ` : ''}
 
                         <div class="header">
                             <div class="header-icon">
@@ -771,8 +947,9 @@
                                                 </h3>
                                             </div>
                                             ${items.map(item => `
-                                                <div class="item-row">
-                                                    <span style="flex: 1; font-weight: 500; color: #1f2937;">${item.name}</span>
+                                                <div class="item-row" style="${item.picked ? 'background: #dcfce7; border-left: 4px solid #10b981;' : ''}">
+                                                    ${item.picked ? '<span style="font-size: 1.25rem; margin-right: 0.5rem;">✅</span>' : ''}
+                                                    <span style="flex: 1; font-weight: 500; color: #1f2937; ${item.picked ? 'text-decoration: line-through; color: #6b7280;' : ''}">${item.name}</span>
                                                     <select onchange="updateItemAisle(${item.id}, this.value)" style="padding: 0.5rem; border-radius: 0.5rem; border: 2px solid #e5e7eb;">
                                                         ${Object.keys(aisleDatabase).map(a => `
                                                             <option value="${a}" ${item.aisle === a ? 'selected' : ''}>${getAisleName(a)}</option>
@@ -821,13 +998,16 @@
                                         <div 
                                             class="draggable-item" 
                                             draggable="true"
-                                            ondragstart="state.draggedIndex = ${index}; this.classList.add('dragging');"
-                                            ondragend="this.classList.remove('dragging'); state.draggedIndex = null;"
-                                            ondragover="event.preventDefault();"
+                                            ontouchstart="handleTouchStart(${index}, event)"
+                                            ontouchmove="handleTouchMove(event)"
+                                            ontouchend="handleTouchEnd()"
+                                            ondragstart="handleDragStart(${index}, event); this.classList.add('dragging');"
+                                            ondragend="handleDragEnd()"
+                                            ondragover="handleDragOver(${index}, event)"
                                             ondrop="handleDrop(${index})"
-                                            style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: white; border: 2px solid #e5e7eb; border-radius: 0.75rem; margin-bottom: 0.75rem; cursor: move;"
+                                            style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: white; border: 2px solid #e5e7eb; border-radius: 0.75rem; margin-bottom: 0.75rem;"
                                         >
-                                            <span style="font-size: 1.5rem; color: #9ca3af;">☰</span>
+                                            <span class="drag-handle">☰</span>
                                             <span style="background: linear-gradient(to bottom right, #6366f1, #9333ea); color: white; font-weight: 700; width: 2.5rem; height: 2.5rem; border-radius: 0.75rem; display: flex; align-items: center; justify-content: center; font-size: 1.125rem;">
                                                 ${index + 1}
                                             </span>
@@ -857,15 +1037,98 @@
             `;
         }
 
+        // Enhanced drag handlers for mobile
+        let touchStartY = 0;
+        let touchCurrentY = 0;
+        let isDragging = false;
+
+        function handleDragStart(index, event) {
+            state.draggedIndex = index;
+            if (event.dataTransfer) {
+                event.dataTransfer.effectAllowed = 'move';
+            }
+        }
+
+        function handleDragOver(index, event) {
+            event.preventDefault();
+            if (state.draggedIndex === null || state.draggedIndex === index) return;
+            
+            // Add visual feedback
+            const items = document.querySelectorAll('.draggable-item');
+            items.forEach((item, i) => {
+                if (i === index) {
+                    item.classList.add('drag-over');
+                } else {
+                    item.classList.remove('drag-over');
+                }
+            });
+        }
+
         function handleDrop(index) {
+            // Remove all drag-over classes
+            const items = document.querySelectorAll('.draggable-item');
+            items.forEach(item => item.classList.remove('drag-over'));
+            
             if (state.draggedIndex === null || state.draggedIndex === index) return;
             const newOrder = [...state.aisleOrder];
             const draggedAisle = newOrder[state.draggedIndex];
             newOrder.splice(state.draggedIndex, 1);
             newOrder.splice(index, 0, draggedAisle);
             state.aisleOrder = newOrder;
-            state.draggedIndex = index;
+            state.draggedIndex = null;
             render();
+        }
+
+        function handleDragEnd() {
+            state.draggedIndex = null;
+            const items = document.querySelectorAll('.draggable-item');
+            items.forEach(item => {
+                item.classList.remove('dragging', 'drag-over');
+            });
+        }
+
+        // Touch event handlers for mobile
+        function handleTouchStart(index, event) {
+            isDragging = true;
+            state.draggedIndex = index;
+            touchStartY = event.touches[0].clientY;
+            event.currentTarget.classList.add('dragging');
+        }
+
+        function handleTouchMove(event) {
+            if (!isDragging || state.draggedIndex === null) return;
+            event.preventDefault();
+            
+            touchCurrentY = event.touches[0].clientY;
+            const deltaY = touchCurrentY - touchStartY;
+            
+            // Find which item we're over
+            const items = document.querySelectorAll('.draggable-item');
+            items.forEach((item, index) => {
+                const rect = item.getBoundingClientRect();
+                const itemMiddle = rect.top + rect.height / 2;
+                
+                if (touchCurrentY > rect.top && touchCurrentY < rect.bottom) {
+                    if (index !== state.draggedIndex) {
+                        // Perform the swap
+                        const newOrder = [...state.aisleOrder];
+                        const draggedAisle = newOrder[state.draggedIndex];
+                        newOrder.splice(state.draggedIndex, 1);
+                        newOrder.splice(index, 0, draggedAisle);
+                        state.aisleOrder = newOrder;
+                        state.draggedIndex = index;
+                        touchStartY = touchCurrentY;
+                        render();
+                    }
+                }
+            });
+        }
+
+        function handleTouchEnd() {
+            isDragging = false;
+            state.draggedIndex = null;
+            const items = document.querySelectorAll('.draggable-item');
+            items.forEach(item => item.classList.remove('dragging', 'drag-over'));
         }
 
         function renderShoppingStage() {
@@ -1081,6 +1344,132 @@
             `;
         }
 
+        function renderHistoryStage() {
+            const formatDate = (isoString) => {
+                const date = new Date(isoString);
+                const today = new Date();
+                const yesterday = new Date(today);
+                yesterday.setDate(yesterday.getDate() - 1);
+                
+                const isToday = date.toDateString() === today.toDateString();
+                const isYesterday = date.toDateString() === yesterday.toDateString();
+                
+                if (isToday) {
+                    return `${state.language === 'fi' ? 'Tänään' : 'Today'} ${date.toLocaleTimeString(state.language === 'fi' ? 'fi-FI' : 'en-US', { hour: '2-digit', minute: '2-digit' })}`;
+                } else if (isYesterday) {
+                    return `${state.language === 'fi' ? 'Eilen' : 'Yesterday'} ${date.toLocaleTimeString(state.language === 'fi' ? 'fi-FI' : 'en-US', { hour: '2-digit', minute: '2-digit' })}`;
+                } else {
+                    return date.toLocaleDateString(state.language === 'fi' ? 'fi-FI' : 'en-US', { 
+                        month: 'short', 
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                }
+            };
+
+            return `
+                <div class="bg-create">
+                    <div class="container">
+                        <div class="header">
+                            <div class="header-icon" style="background: linear-gradient(to bottom right, #8b5cf6, #7c3aed);">
+                                <span style="font-size: 2.25rem;">📜</span>
+                            </div>
+                            <h1>${t('pastLists')}</h1>
+                            <p style="color: #6b7280;">${state.history.length} ${state.history.length === 1 ? (state.language === 'fi' ? 'lista' : 'list') : (state.language === 'fi' ? 'listaa' : 'lists')}</p>
+                        </div>
+
+                        ${state.history.length === 0 ? `
+                            <div class="card text-center" style="padding: 3rem;">
+                                <div style="font-size: 4rem; margin-bottom: 1rem;">📭</div>
+                                <h2 style="font-size: 1.5rem; font-weight: 700; color: #1f2937; margin-bottom: 0.5rem;">
+                                    ${t('noHistory')}
+                                </h2>
+                                <p style="color: #6b7280; margin-bottom: 2rem;">
+                                    ${t('noHistoryDesc')}
+                                </p>
+                                <button class="btn btn-primary" onclick="state.stage = 'create'; render();">
+                                    ➕ ${t('startNewList')}
+                                </button>
+                            </div>
+                        ` : `
+                            ${state.history.length > 0 ? `
+                                <div style="margin-bottom: 1rem; display: flex; justify-content: flex-end;">
+                                    <button 
+                                        onclick="clearAllHistory()"
+                                        class="btn btn-danger"
+                                        style="padding: 0.5rem 1rem; font-size: 0.875rem;"
+                                    >
+                                        🗑️ ${t('clearHistory')}
+                                    </button>
+                                </div>
+                            ` : ''}
+
+                            ${state.history.map(entry => {
+                                const groupedItems = {};
+                                entry.items.forEach(item => {
+                                    if (!groupedItems[item.aisle]) groupedItems[item.aisle] = [];
+                                    groupedItems[item.aisle].push(item);
+                                });
+
+                                return `
+                                    <div class="card" style="margin-bottom: 1rem; border: 2px solid #e9d5ff;">
+                                        <div class="flex flex-between items-center mb-2">
+                                            <div>
+                                                <div style="font-weight: 700; color: #1f2937; font-size: 1.125rem;">
+                                                    ${t('listFrom')} ${formatDate(entry.date)}
+                                                </div>
+                                                <div style="color: #6b7280; font-size: 0.875rem;">
+                                                    ${entry.totalItems} ${entry.totalItems === 1 ? t('item') : t('items')} • ${entry.aisleCount} ${t('aisles')}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div style="margin: 1rem 0;">
+                                            ${Object.entries(groupedItems).slice(0, 3).map(([aisle, items]) => {
+                                                const config = categoryConfig[aisle] || categoryConfig['Other'];
+                                                return `
+                                                    <div style="display: inline-block; margin-right: 0.5rem; margin-bottom: 0.5rem; padding: 0.5rem 0.75rem; background: ${config.bg}; border: 1px solid ${config.border}; border-radius: 0.5rem; font-size: 0.875rem; font-weight: 600; color: ${config.text};">
+                                                        ${getAisleName(aisle)} (${items.length})
+                                                    </div>
+                                                `;
+                                            }).join('')}
+                                            ${Object.keys(groupedItems).length > 3 ? `
+                                                <div style="display: inline-block; margin-bottom: 0.5rem; padding: 0.5rem 0.75rem; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 0.5rem; font-size: 0.875rem; font-weight: 600; color: #6b7280;">
+                                                    +${Object.keys(groupedItems).length - 3}
+                                                </div>
+                                            ` : ''}
+                                        </div>
+
+                                        <div class="flex gap-2">
+                                            <button 
+                                                onclick="loadFromHistory(${entry.id})"
+                                                class="btn btn-primary"
+                                                style="flex: 1; padding: 0.75rem;"
+                                            >
+                                                🔄 ${t('useAgain')}
+                                            </button>
+                                            <button 
+                                                onclick="deleteHistoryEntry(${entry.id})"
+                                                class="btn"
+                                                style="padding: 0.75rem 1rem; background: white; border: 2px solid #ef4444; color: #ef4444;"
+                                            >
+                                                🗑️
+                                            </button>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        `}
+
+                        <button class="btn" onclick="state.stage = 'create'; render();" style="width: 100%; background: white; border: 2px solid #d1d5db; color: #374151;">
+                            ⬅️ ${t('backButton')}
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
         function render() {
             const app = document.getElementById('app');
             let html = '';
@@ -1093,6 +1482,8 @@
                 html = renderShoppingStage();
             } else if (state.stage === 'completed') {
                 html = renderCompletedStage();
+            } else if (state.stage === 'history') {
+                html = renderHistoryStage();
             }
 
             // Add modals
